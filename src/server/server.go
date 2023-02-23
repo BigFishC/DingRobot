@@ -41,7 +41,7 @@ func (hi *HeaderInfo) DeploySign(ts string, secret string) string {
 
 //Start 启动服务
 func Start() {
-	appSecret := "0wXs54pFHfndKp-h99ZeGIZlJA_zwkxfoIZA-WxjSkkogDZzZRZDkfQ58g1alTmC"
+	appSecret := "xxxxxxxxxxxxxxxxxx"
 	http.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
 
 		headerTimeStr := r.Header.Get("timestamp")
