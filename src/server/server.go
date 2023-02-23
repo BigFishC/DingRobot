@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -27,9 +28,9 @@ func (hi *HeaderInfo) DeployTimestamp(ts string) int64 {
 }
 
 //DeploySign 获得签名
-func (hi *HeaderInfo) DeploySign(ts string, sn string) string {
-	signNatureString := ts + "\n" + sn
-	key := []byte(sn)
+func (hi *HeaderInfo) DeploySign(ts string, secret string) string {
+	signNatureString := ts + "\n" + secret
+	key := []byte(secret)
 	h := hmac.New(sha256.New, key)
 	h.Write([]byte(signNatureString))
 	snData := h.Sum(nil)
@@ -40,6 +41,7 @@ func (hi *HeaderInfo) DeploySign(ts string, sn string) string {
 
 //Start 启动服务
 func Start() {
+	appSecret := "0wXs54pFHfndKp-h99ZeGIZlJA_zwkxfoIZA-WxjSkkogDZzZRZDkfQ58g1alTmC"
 	http.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
 
 		headerTimeStr := r.Header.Get("timestamp")
@@ -49,13 +51,14 @@ func Start() {
 			Sign:      headerSign,
 		}
 		diffResult := headerMessage.DeployTimestamp(headerMessage.Timestamp)
-		snResult := headerMessage.DeploySign(headerMessage.Timestamp, headerMessage.Timestamp)
-		if diffResult > 3600 || snResult != "" {
-			w.WriteHeader(http.StatusUnauthorized)
-		} else {
+		snResult := headerMessage.DeploySign(headerMessage.Timestamp, appSecret)
+		fmt.Printf("timestamp:%v \n sign: %v", diffResult, snResult)
+		if diffResult < 3600 && snResult == headerMessage.Sign {
 			w.Write([]byte("Hello World!"))
+		} else {
+			w.WriteHeader(http.StatusUnauthorized)
 		}
 	})
 
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8081", nil)
 }
