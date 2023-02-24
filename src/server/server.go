@@ -4,10 +4,11 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/liuchong/chat/src/robot"
 )
 
 //HeaderInfo 消息头
@@ -39,10 +40,11 @@ func (hi *HeaderInfo) DeploySign(ts string, secret string) string {
 
 }
 
-//Start 启动服务
-func Start() {
-	appSecret := "xxxxxxxxxxxxxxxxxx"
-	http.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
+//ServerStart 启动服务
+func ServerStart(ddtoken string, appsecret string) {
+	// forwarder := robot.NewDingTalkRobotForwarder("7d59776de9dee9697bc2c8ea0da2dd777e0303b21049e5c6f643523bc606a2f6")
+	forwarder := robot.NewDingTalkRobotForwarder(ddtoken)
+	http.HandleFunc("/chatapi", func(w http.ResponseWriter, r *http.Request) {
 
 		headerTimeStr := r.Header.Get("timestamp")
 		headerSign := r.Header.Get("sign")
@@ -51,10 +53,12 @@ func Start() {
 			Sign:      headerSign,
 		}
 		diffResult := headerMessage.DeployTimestamp(headerMessage.Timestamp)
-		snResult := headerMessage.DeploySign(headerMessage.Timestamp, appSecret)
-		fmt.Printf("timestamp:%v \n sign: %v", diffResult, snResult)
+		snResult := headerMessage.DeploySign(headerMessage.Timestamp, appsecret)
 		if diffResult < 3600 && snResult == headerMessage.Sign {
-			w.Write([]byte("Hello World!"))
+			err := forwarder.Forward("TEST Hello, World!")
+			if err != nil {
+				panic(err)
+			}
 		} else {
 			w.WriteHeader(http.StatusUnauthorized)
 		}

@@ -6,10 +6,10 @@ run:
 build:
 	go build -o chat-dingtalk main.go
 
-build-linux:
+linux:
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -o chat-dingtalk main.go
 
-build-linux-arm:
+linux-arm:
 	CGO_ENABLED=0 GOARCH=arm64 GOOS=linux go build -o chat-dingtalk main.go
 
 lint:
