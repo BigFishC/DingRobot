@@ -4,11 +4,15 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/liuchong/chat/src/robot"
+	"github.com/liuchong/chat/src/server/logger"
 )
 
 //HeaderInfo 消息头
@@ -42,27 +46,41 @@ func (hi *HeaderInfo) DeploySign(ts string, secret string) string {
 
 //ServerStart 启动服务
 func ServerStart(ddtoken string, appsecret string) {
-	// forwarder := robot.NewDingTalkRobotForwarder("7d59776de9dee9697bc2c8ea0da2dd777e0303b21049e5c6f643523bc606a2f6")
-	forwarder := robot.NewDingTalkRobotForwarder(ddtoken)
-	http.HandleFunc("/chatapi", func(w http.ResponseWriter, r *http.Request) {
-
-		headerTimeStr := r.Header.Get("timestamp")
-		headerSign := r.Header.Get("sign")
-		headerMessage := &HeaderInfo{
-			Timestamp: headerTimeStr,
-			Sign:      headerSign,
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		data, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			logger.Danger(err)
 		}
-		diffResult := headerMessage.DeployTimestamp(headerMessage.Timestamp)
-		snResult := headerMessage.DeploySign(headerMessage.Timestamp, appsecret)
-		if diffResult < 3600 && snResult == headerMessage.Sign {
-			err := forwarder.Forward("TEST Hello, World!")
+		if len(data) == 0 {
+			logger.Warning("回调参数为空，请检查！")
+		}
+		var msgObj = new(robot.ReceiveMsg)
+		err = json.Unmarshal(data, &msgObj)
+		if err != nil {
+			logger.Warning("接收Body体转换json失败： %v\n", err)
+		}
+		if msgObj.Text.Content == "" || msgObj.ChatbotUserID == "" {
+			logger.Warning("从钉钉回调过来的内容为空，根据过往的经验，或许重新创建一下机器人，能解决这个问题")
+			return
+		}
+
+		if len(msgObj.Text.Content) == 1 || msgObj.Text.Content == " 帮助" {
+
+			err = robot.Forward("TEST Hello, World!", ddtoken)
 			if err != nil {
-				panic(err)
+				logger.Danger(err)
 			}
 		} else {
-			w.WriteHeader(http.StatusUnauthorized)
+			logger.Info(fmt.Sprintf("dingtalk callback parameters: %#v", msgObj))
 		}
-	})
-
-	http.ListenAndServe(":8081", nil)
+	}
+	server := &http.Server{
+		Addr:    ":8081",
+		Handler: http.HandlerFunc(handler),
+	}
+	logger.Info("Start Listen On", server.Addr)
+	err := server.ListenAndServe()
+	if err != nil {
+		logger.Danger(err)
+	}
 }
