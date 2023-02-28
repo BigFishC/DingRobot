@@ -44,6 +44,16 @@ func (hi *HeaderInfo) DeploySign(ts string, secret string) string {
 
 }
 
+//Helper 提示信息
+var Helper string = `Commands:
+=================================
+🙋 单聊 👉 单独聊天，缺省
+🗣 串聊 👉 带上下文聊天
+🔃 重置 👉 重置带上下文聊天
+🚀 帮助 👉 显示帮助信息
+=================================
+`
+
 //ServerStart 启动服务
 func ServerStart(ddtoken string, appsecret string) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +64,7 @@ func ServerStart(ddtoken string, appsecret string) {
 		if len(data) == 0 {
 			logger.Warning("回调参数为空，请检查！")
 		}
-		var msgObj = new(robot.ReceiveMsg)
+		var msgObj = new(robot.ReMsg)
 		err = json.Unmarshal(data, &msgObj)
 		if err != nil {
 			logger.Warning("接收Body体转换json失败： %v\n", err)
@@ -65,13 +75,13 @@ func ServerStart(ddtoken string, appsecret string) {
 		}
 
 		if len(msgObj.Text.Content) == 1 || msgObj.Text.Content == " 帮助" {
-
-			err = robot.Forward("TEST Hello, World!", ddtoken)
+			err = msgObj.Forward(Helper, ddtoken)
 			if err != nil {
 				logger.Danger(err)
 			}
 		} else {
-			logger.Info(fmt.Sprintf("dingtalk callback parameters: %#v", msgObj))
+			logger.Warning(fmt.Sprintf("dingtalk callback parameters: %#v", msgObj))
+
 		}
 	}
 	server := &http.Server{
