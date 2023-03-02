@@ -1,61 +1,27 @@
 package server
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
-	"time"
 
+	"github.com/liuchong/chat/src/dbases"
 	"github.com/liuchong/chat/src/robot"
 	"github.com/liuchong/chat/src/server/logger"
 )
 
-//HeaderInfo 消息头
-type HeaderInfo struct {
-	Timestamp string `json:"timestamp"`
-	Sign      string `json:"sign"`
-}
-
-//DeployTimestamp 时间戳
-func (hi *HeaderInfo) DeployTimestamp(ts string) int64 {
-	tsNum, err := strconv.ParseInt(ts, 10, 64)
-	if err != nil {
-		panic(err)
-	}
-	now := time.Now().Unix()
-	diff := now - tsNum
-	return diff
-}
-
-//DeploySign 获得签名
-func (hi *HeaderInfo) DeploySign(ts string, secret string) string {
-	signNatureString := ts + "\n" + secret
-	key := []byte(secret)
-	h := hmac.New(sha256.New, key)
-	h.Write([]byte(signNatureString))
-	snData := h.Sum(nil)
-	snNature := base64.StdEncoding.EncodeToString(snData)
-	return snNature
-
-}
-
 //Helper 提示信息
 var Helper string = `Commands:
 =================================
-🙋 单聊 👉 单独聊天，缺省
-🗣 串聊 👉 带上下文聊天
-🔃 重置 👉 重置带上下文聊天
-🚀 帮助 👉 显示帮助信息
+😉 查询CPU 👉 命令明细：查询+IP+CPU
+🚀 查询内存 👉 命令明细：查询+IP+内存
+🤖 查询硬盘 👉 命令明细：查询+IP+硬盘
 =================================
 `
 
 //ServerStart 启动服务
-func ServerStart(ddtoken string, appsecret string) {
+func ServerStart(ddtoken string, appsecret string, papi string) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		data, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -80,6 +46,11 @@ func ServerStart(ddtoken string, appsecret string) {
 				logger.Danger(err)
 			}
 		} else {
+			newmsg := ProcessReceive(msgObj.Text.Content, papi)
+			err = msgObj.Forward(newmsg, ddtoken)
+			if err != nil {
+				logger.Danger(err)
+			}
 			logger.Warning(fmt.Sprintf("dingtalk callback parameters: %#v", msgObj))
 
 		}
@@ -92,5 +63,27 @@ func ServerStart(ddtoken string, appsecret string) {
 	err := server.ListenAndServe()
 	if err != nil {
 		logger.Danger(err)
+	}
+}
+
+//ProcessReceive 创建一个函数
+func ProcessReceive(ReceiveMsg string, papi string) string {
+	newreceivemsg := &dbases.MonitorMsg{
+		Address:     ReceiveMsg[7 : len(ReceiveMsg)-6],
+		MonitorItem: ReceiveMsg[len(ReceiveMsg)-6:],
+	}
+
+	switch newreceivemsg.MonitorItem {
+	case "CPU":
+		newreceivemsg.MonitorItem = "cpu_usage_idle"
+		return newreceivemsg.QueryResult(papi)
+	case "内存":
+		newreceivemsg.MonitorItem = "cpu_usage_idle"
+		return newreceivemsg.QueryResult(papi)
+	case "硬盘":
+		newreceivemsg.MonitorItem = "cpu_usage_idle"
+		return newreceivemsg.QueryResult(papi)
+	default:
+		return ""
 	}
 }

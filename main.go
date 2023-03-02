@@ -9,18 +9,18 @@ import (
 )
 
 func main() {
-	tn, at := config.ParseConfig(".")
+	tn, at, papi := config.ParseConfig(".")
 	app := cli.NewApp()
 	app.Name = "chat-dingtalk"
 	app.Version = "v0.1.0"
 	app.Usage = "Realize intelligent operation and maintenance"
 	app.Commands = []*cli.Command{
-		serverCMD(tn, at),
+		serverCMD(tn, at, papi),
 	}
 	app.Run(os.Args)
 }
 
-func serverCMD(token string, as string) *cli.Command {
+func serverCMD(token string, as string, papi string) *cli.Command {
 	return &cli.Command{
 		Name:  "server",
 		Usage: "Run server",
@@ -32,7 +32,7 @@ func serverCMD(token string, as string) *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			server.ServerStart(token, as)
+			server.ServerStart(token, as, papi)
 			return nil
 		},
 	}

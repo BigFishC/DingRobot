@@ -3,7 +3,7 @@ package config
 import "github.com/spf13/viper"
 
 //ParseConfig 解析配置文件
-func ParseConfig(configpath string) (string, string) {
+func ParseConfig(configpath string) (string, string, string) {
 	//设置配置文件的名字和路径
 	viper.SetConfigName("config")
 	viper.AddConfigPath(configpath)
@@ -14,5 +14,5 @@ func ParseConfig(configpath string) (string, string) {
 	if err != nil {
 		panic(err)
 	}
-	return viper.GetString("server.token"), viper.GetString("server.appsecret")
+	return viper.GetString("server.token"), viper.GetString("server.appsecret"), viper.GetString("server.promapi")
 }
