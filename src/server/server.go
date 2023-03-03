@@ -74,16 +74,16 @@ func ProcessReceive(ReceiveMsg string, papi string) string {
 	}
 
 	switch newreceivemsg.MonitorItem {
-	case "CPU":
+	case "核心":
 		newreceivemsg.MonitorItem = "cpu_usage_idle"
 		return newreceivemsg.QueryResult(papi)
 	case "内存":
-		newreceivemsg.MonitorItem = "cpu_usage_idle"
+		newreceivemsg.MonitorItem = "mem_used_percent"
 		return newreceivemsg.QueryResult(papi)
 	case "硬盘":
-		newreceivemsg.MonitorItem = "cpu_usage_idle"
+		newreceivemsg.MonitorItem = "disk_used_percent"
 		return newreceivemsg.QueryResult(papi)
 	default:
-		return ""
+		return "你说的都对！"
 	}
 }
